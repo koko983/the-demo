@@ -4,9 +4,8 @@
   "description": "just a demo for a real time Dashboard project with Node, MySQL and WebSocket",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"no test specified\" && exit 1",
     "start": "node app.js",
-    "run": "concurrently \"node app.js\" \"opener http://localhost:5000\""
+    "test": "concurrently \"node app.js\" \"opener http://localhost:5000\""
   },
   "dependencies": {
     "connect": "^3.6.5",

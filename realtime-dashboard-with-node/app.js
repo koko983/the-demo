@@ -30,7 +30,7 @@ function mergediff(orig_data, new_data) {
 }
 
 // this is the query loop.
-function dataSync(conn, orig_data, lastUpdate) {
+function dataSync(orig_data, lastUpdate) {
    client.get("http://localhost:3000/api/lastupdate/" + lastUpdate, function (data, response) {
         if (data) {
             //debug('query success. rows: ', data.length);
@@ -60,20 +60,20 @@ function dataSync(conn, orig_data, lastUpdate) {
                 pushUpdate(diff.data);
             }
         }
-        setTimeout(function () { dataSync(conn, orig_data, lastUpdate); }, 1000);
+        setTimeout(function () { dataSync(orig_data, lastUpdate); }, 1000);
     });
 }
 
 connect().use(serveStatic(__dirname)).listen(5000, function () {
     console.log('Server running on 5000...');
 });
-app.listen(80);
+app.listen(5001);
 
 // cache 
 var data = {};
 
 // start data sychonization
-dataSync(conn, data, 0);
+dataSync(data, 0);
 
 // send complete data at the first connect
 io.on('connection', function (socket) {
