@@ -31,10 +31,7 @@ function mergediff(orig_data, new_data) {
 
 // this is the query loop.
 function dataSync(conn, orig_data, lastUpdate) {
-    var queryString = mysql.format("select `time`,value,updateTime from `KPI` where network='vzwca' and " +
-        "`kpi`='xxx' and updateTime > ? order by `time` desc limit 50", lastUpdate);
-
-    client.get("http://localhost:3000/api/lastupdate/" + lastUpdate, function (data, response) {
+   client.get("http://localhost:3000/api/lastupdate/" + lastUpdate, function (data, response) {
         if (data) {
             //debug('query success. rows: ', data.length);
             var new_data = {};
