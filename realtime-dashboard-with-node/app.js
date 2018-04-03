@@ -4,9 +4,9 @@ var debug = require('debug')('realdash');
 var connect = require('connect');
 var serveStatic = require('serve-static');
 var Client = require('node-rest-client').Client;
- 
+
 var client = new Client();
- 
+
 // merge new data to cache, return the diff
 function mergediff(orig_data, new_data) {
     var diff = { needUpdate: false, data: {} };
@@ -33,64 +33,38 @@ function mergediff(orig_data, new_data) {
 function dataSync(conn, orig_data, lastUpdate) {
     var queryString = mysql.format("select `time`,value,updateTime from `KPI` where network='vzwca' and " +
         "`kpi`='xxx' and updateTime > ? order by `time` desc limit 50", lastUpdate);
-        // direct way 
 
-        client.get("http://remote.site/rest/xml/method", function (data, response) {
-    // parsed response body as js object 
-    console.log(data);
-    // raw response 
-    console.log(response);
-});
-
-    conn.query(queryString, function (err, rows, fields) {
-        if (err) {
-            console.log('Query [' + queryString + '] failed: ', err);
-        } else {
-            debug('query success. rows: ', rows.length);
-            if (rows && rows.length >= 0) {
-                var new_data = {};
-                for (var i = 0; i < rows.length; i++) {
-                    var row = {};
-                    var row_key = 'time';
-                    for (var field in rows[i]) {
-                        var value = rows[i][field];
-                        if (value instanceof Date) {
-                            value = value.getTime();
-                        }
-                        if (field === 'updateTime') {
-                            if (rows[i][field] > lastUpdate) {
-                                lastUpdate = rows[i][field];
-                            }
-                        } else if (field === row_key) {
-                            row_key = value;
-                        } else {
-                            row[field] = value;
-                        }
+    client.get("http://localhost:3000/api/lastupdate/" + lastUpdate, function (data, response) {
+        if (data) {
+            //debug('query success. rows: ', data.length);
+            var new_data = {};
+            for (var i = 0; i < data.length; i++) {
+                var row = {};
+                var row_key = 'time';
+                for (var field in data[i]) {
+                    var value = data[i][field];
+                    if (value instanceof Date) {
+                        value = value.getTime();
                     }
-                    new_data[row_key] = row;
+                    if (field === 'updateTime') {
+                        if (data[i][field] > lastUpdate) {
+                            lastUpdate = data[i][field];
+                        }
+                    } else if (field === row_key) {
+                        row_key = value;
+                    } else {
+                        row[field] = value;
+                    }
                 }
-                var diff = mergediff(orig_data, new_data);
-                if (diff.needUpdate) {
-                    pushUpdate(diff.data);
-                }
+                new_data[row_key] = row;
+            }
+            var diff = mergediff(orig_data, new_data);
+            if (diff.needUpdate) {
+                pushUpdate(diff.data);
             }
         }
         setTimeout(function () { dataSync(conn, orig_data, lastUpdate); }, 1000);
     });
-}
-
-function putItBaby() {
-    var now = new Date();
-    var timestamp = parseInt(now.getTime() / 1000);
-    var queryString = mysql.format("Insert into `KPI` values (?,?,?,?,?,?)", [4, 10, "22", timestamp, "vzwca", "xxx"]);
-    conn.query(queryString);
-
-    now = new Date();
-    timestamp = parseInt(now.getTime() / 1000);
-    var queryString = mysql.format("Insert into `KPI` values (?,?,?,?,?,?)", [5, 11, "24", timestamp, "vzwca", "xxx"]);
-    conn.query(queryString);
-
-    console.log("Done.");
 }
 
 connect().use(serveStatic(__dirname)).listen(5000, function () {
@@ -103,7 +77,6 @@ var data = {};
 
 // start data sychonization
 dataSync(conn, data, 0);
-setTimeout(putItBaby, 7000);
 
 // send complete data at the first connect
 io.on('connection', function (socket) {
